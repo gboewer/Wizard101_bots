@@ -18,5 +18,5 @@ def getWindowHandle(windowName):
 
 def checkWindowFormat(windowHandle):
     tup = win32gui.GetWindowPlacement(windowHandle)
-    if not tup[1] == win32con.SW_SHOWNORMAL:
-        raise IncorrectWindowFormatException('Error: Window is either maximized or minimized')
+    if(not tup[1] == win32con.SW_SHOWNORMAL):
+        raise IncorrectWindowFormatException('Error: Window is either minimized or maximized')

@@ -4,7 +4,6 @@ import time
 import wincaputil
 import windowcapture
 
-
 class wizAPI:
     def __init__(self):
         self.windowHandle = None
@@ -18,7 +17,6 @@ class wizAPI:
         return self
 
     def screenshot(self):
-        self.checkWindowFormat()
         windowCapture = windowcapture.WindowCapture(self.windowHandle)
         screenshot = windowCapture.get_screenshot()
         return screenshot

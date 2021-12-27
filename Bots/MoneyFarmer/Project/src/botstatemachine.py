@@ -1,6 +1,6 @@
 class BotStateMachine:
-    def __init__(self):
-        self.state = None
+    def __init__(self, initState = None):
+        self.state = initState
 
     def setState(self, state):
         if(not self.state == None):
@@ -8,7 +8,7 @@ class BotStateMachine:
         self.state = state
         state.enter()
 
-    def run(self):
+    def runState(self):
         self.state.run()
 
 class State:

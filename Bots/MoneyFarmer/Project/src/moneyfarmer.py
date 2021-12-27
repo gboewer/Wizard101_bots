@@ -11,6 +11,26 @@ class MoneyFarmer(BotStateMachine):
         super().__init__()
         self.windowInterface = windowInterface
 
+    def start(self):
+        self.setState(Init(self))
+        while(True):
+            try:
+                # Check window format before running
+                self.windowInterface.checkWindowFormat()
+
+                # Run current state
+                self.runState()
+
+            except IncorrectWindowFormatException as e:
+                print(e)
+                sleep(2)
+
+            # Listen for exit key
+            if cv.waitKey(1) == ord('q'):
+                cv.destroyAllWindows()
+                break
+
+
 if(__name__ == '__main__'):
     try:
         # Get window handle for specified window
@@ -19,19 +39,13 @@ if(__name__ == '__main__'):
 
         # Pass windowhandle to statemachine so states can access it and set initial state
         bot = MoneyFarmer(windowInterface)
-        bot.setState(Init(bot))
 
+        # Start bot only when window is neither minimized nor maximized
         while(True):
             try:
-                # Run current state
-                bot.run()
-
-                # Listen for exit key
-                if cv.waitKey(1) == ord('q'):
-                    cv.destroyAllWindows()
-                    break
-
-            # Window is either minimized or maximized
+                windowInterface.checkWindowFormat()
+                bot.start()
+                break
             except IncorrectWindowFormatException as e:
                 print(e)
                 sleep(2)
