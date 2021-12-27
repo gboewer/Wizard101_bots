@@ -14,7 +14,6 @@ class BotStateMachine:
 class State:
     def __init__(self, bot):
         self.bot = bot
-        self.windowHandle = bot.windowHandle
 
     def enter(self): pass
     def run(self): pass

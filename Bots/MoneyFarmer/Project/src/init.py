@@ -8,6 +8,7 @@ class Init(State):
     def enter(self): pass
     
     def run(self):
-        cv.imshow('MoneyFarmer', self.bot.screenshot)
+        screenshot = self.bot.windowInterface.screenshot()
+        cv.imshow('MoneyFarmer', screenshot)
 
     def exit(self): pass
