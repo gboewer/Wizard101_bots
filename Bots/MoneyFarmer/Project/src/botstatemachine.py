@@ -1,3 +1,5 @@
+import pyautogui
+
 class BotStateMachine:
     def __init__(self, initState = None):
         self.state = initState
@@ -7,9 +9,11 @@ class BotStateMachine:
             self.state.exit()
         self.state = state
         state.enter()
+        state.run()
 
     def runState(self):
-        self.state.run()
+        if(self.state != None):
+            self.state.run()
 
 class State:
     def __init__(self, bot):
