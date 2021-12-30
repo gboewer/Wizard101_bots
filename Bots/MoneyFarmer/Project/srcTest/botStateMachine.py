@@ -1,5 +1,3 @@
-import pyautogui
-
 class BotStateMachine:
     def __init__(self, initState = None):
         self.state = initState

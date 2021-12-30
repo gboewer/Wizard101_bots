@@ -1,14 +1,11 @@
 import win32gui
 import pyautogui
 import time
-import wincaputil
-import windowcapture
 import cv2 as cv
 
 class wizAPI:
     def __init__(self, windowHandle = None):
-        self.windowHandle = None
-        self.screenshot = None
+        self.windowHandle = windowHandle
 
     def displayScreenshot(self, windowName):
         if(self.screenshot.all != None):
@@ -90,7 +87,7 @@ class wizAPI:
         pyautogui.click(button=button)
         return self
 
-    def hold_key(self, key, holdtime):
+    def hold_key_for_time(self, key, holdtime):
         """ 
         Holds a key for a specific amount of time, usefull for moving with the W A S D keys 
         """
@@ -99,6 +96,14 @@ class wizAPI:
         time.sleep(holdtime)
         pyautogui.keyUp(key)
         return self
+
+    def hold_key(self, key):
+        self.set_active()
+        pyautogui.keyDown(key)
+
+    def unhold_key(self, key):
+        self.set_active()
+        pyautogui.keyUp(key)
 
     def press_key(self, key):
         """

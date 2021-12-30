@@ -2,8 +2,6 @@ from botstatemachine import *
 from wincaputil import IncorrectWindowFormatException
 from time import sleep
 import cv2 as cv
-import threading
-import sys
 
 class MoneyFarmer(BotStateMachine):
     def __init__(self, windowInterface):
@@ -11,41 +9,28 @@ class MoneyFarmer(BotStateMachine):
         self.windowInterface = windowInterface
 
     def start(self):
-        def displayLiveFeed():
-            def printRBG(event,x,y,flags,param):
-                if event == cv.EVENT_LBUTTONDBLCLK:
-                    print(str(x) + ',' + str(y) + ': ' + self.windowInterface.getPixelColorString(x,y))
+        def printRBG(event,x,y,flags,param):
+            if event == cv.EVENT_LBUTTONDBLCLK:
+                print(str(x) + ',' + str(y) + ': ' + self.windowInterface.getPixelColorString(x,y))
 
-            while(True):
-                try:
-                    self.windowInterface.checkWindowFormat()
-                    displayWindowName = 'Window Feed'
-                    cv.namedWindow(displayWindowName)
-                    cv.setMouseCallback(displayWindowName, printRBG)
+        displayWindowName = 'Window Feed'
+        cv.namedWindow(displayWindowName)
+        cv.setMouseCallback(displayWindowName, printRBG)
+
+        self.setState(Init(self))
+        while(True):
+            try:
+                self.windowInterface.getScreenshot()
+                self.windowInterface.displayScreenshot(displayWindowName)
+
+                if cv.waitKey(1) == ord('q'):
+                    cv.destroyAllWindows()
                     break
-                except IncorrectWindowFormatException as e:
-                    print(e)
-                    sleep(2)
 
-            while(True):
-                try:
-                    screenshotRGB = self.windowInterface.getScreenshot(False)
-                    screenshotBGR = cv.cvtColor(screenshotRGB, cv.COLOR_RGB2BGR)
-                    cv.imshow(displayWindowName, screenshotBGR)
-
-                    # Listen for exit key
-                    if cv.waitKey(1) == ord('q'):
-                        cv.destroyAllWindows()
-                        sys.exit()
-                except IncorrectWindowFormatException as e:
-                    print(e)
-                    sleep(2)
-
-        displayThread = threading.Thread(target=displayLiveFeed)
-        displayThread.start()
-
-        #self.setState(Init(self))
-        #self.runState()
+                self.runState()
+            except IncorrectWindowFormatException as e:
+                print(e)
+                sleep(2)
 
 class Init(State):
     def __init__(self, bot):
@@ -57,16 +42,13 @@ class Init(State):
     def run(self):
         controlPixelCoords = (22, 51)
         controlPixelColorString = "255,255,0"
-        while(True):
-            try:
-                self.bot.windowInterface.getScreenshot()
 
-                if(self.bot.windowInterface.getPixelColorString(controlPixelCoords) != controlPixelColorString):
-                    break
-            except IncorrectWindowFormatException as e:
-                print(e)
-                sleep(2)
-        self.bot.setState(RunForward(self.bot))
+        try:
+            if(self.bot.windowInterface.getPixelColorString(controlPixelCoords) != controlPixelColorString):
+                self.bot.setState(RunForward(self.bot))
+        except IncorrectWindowFormatException as e:
+            print(e)
+            sleep(2)
 
     def exit(self): pass
     
@@ -76,6 +58,5 @@ class RunForward(State):
 
     def enter(self): pass
     def run(self):
-        while(True):
-            self.bot.windowInterface.hold_key('w', 1)
+        self.bot.windowInterface.hold_key('w', 1)
     def exit(self): pass
