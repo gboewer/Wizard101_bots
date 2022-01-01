@@ -1,62 +1,81 @@
-from botstatemachine import *
-from wincaputil import IncorrectWindowFormatException
+import pyautogui
+from botStateMachine import *
+from threading import Thread, Lock
 from time import sleep
-import cv2 as cv
 
 class MoneyFarmer(BotStateMachine):
-    def __init__(self, windowInterface):
+
+    windowCapture = None
+    detection = None
+    running = False
+    lock = None
+
+    def __init__(self, windowCapture, detection):
         super().__init__()
-        self.windowInterface = windowInterface
-
+        self.lock = Lock()
+        self.windowCapture = windowCapture
+        self.detection = detection
+    
     def start(self):
-        def printRBG(event,x,y,flags,param):
-            if event == cv.EVENT_LBUTTONDBLCLK:
-                print(str(x) + ',' + str(y) + ': ' + self.windowInterface.getPixelColorString(x,y))
-
-        displayWindowName = 'Window Feed'
-        cv.namedWindow(displayWindowName)
-        cv.setMouseCallback(displayWindowName, printRBG)
-
+        self.running = True
+        t = Thread(target=self.run)
+        t.start()
+        
+    def run(self):
         self.setState(Init(self))
-        while(True):
-            try:
-                self.windowInterface.getScreenshot()
-                self.windowInterface.displayScreenshot(displayWindowName)
+        while(self.running):
+            self.runState()
+            
+    def stop(self):
+        self.running = False
 
-                if cv.waitKey(1) == ord('q'):
-                    cv.destroyAllWindows()
-                    break
-
-                self.runState()
-            except IncorrectWindowFormatException as e:
-                print(e)
-                sleep(2)
+    def setState(self, state):
+        super().setState(state)
+        self.lock.acquire()
+        self.detection.setState(state)
+        self.lock.release()
 
 class Init(State):
     def __init__(self, bot):
         super().__init__(bot)
 
     def enter(self):
-        self.bot.windowInterface.press_key('x')
+        pyautogui.press('x')
     
     def run(self):
-        controlPixelCoords = (22, 51)
-        controlPixelColorString = "255,255,0"
-
-        try:
-            if(self.bot.windowInterface.getPixelColorString(controlPixelCoords) != controlPixelColorString):
-                self.bot.setState(RunForward(self.bot))
-        except IncorrectWindowFormatException as e:
-            print(e)
-            sleep(2)
+        if(not self.bot.detection.checkPixel(22, 51, '0,255,255')):
+            self.bot.setState(WaitingScreen(self.bot))
 
     def exit(self): pass
-    
-class RunForward(State):
+
+class WaitingScreen(State):
     def __init__(self, bot):
         super().__init__(bot)
 
     def enter(self): pass
     def run(self):
-        self.bot.windowInterface.hold_key('w', 1)
+        if(self.bot.detection.checkPixel(22, 51, '0,255,255')):
+            self.bot.setState(RunForward(self.bot))
+        sleep(0.5)
+        
+    def exit(self): pass
+
+class RunForward(State):
+    def __init__(self, bot):
+        super().__init__(bot)
+
+    def enter(self): pyautogui.keyDown('w')
+    def run(self):
+        if(not self.bot.detection.checkPixel(98, 98, '180,173,238')):
+            pyautogui.keyUp('w')
+            self.bot.setState(Fight(self.bot))
+        sleep(0.5)
+    def exit(self): pass
+
+class Fight(State):
+    def __init__(self, bot):
+        super().__init__(bot)
+
+    def enter(self): print('Entering fight')
+    def run(self): pass
     def exit(self): pass

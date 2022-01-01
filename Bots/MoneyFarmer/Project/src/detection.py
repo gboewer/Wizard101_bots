@@ -26,7 +26,7 @@ class Detection:
     def setState(self, botState):
         self.botState = botState
 
-    def debugDetection(self):
+    def displayDetection(self):
         screenshot = self.windowCapture.screenshot
         if(screenshot is None):
             return False
@@ -38,39 +38,43 @@ class Detection:
         elif(type(self.botState) == moneyFarmer.RunForward):
             pass
         elif(type(self.botState) == moneyFarmer.Fight):
-            self.findImage('Spells/Blizzard.png', centered = False)
-            self.findImage('Spells/Blizzard_enchanted.png', centered = False)
-            self.findImage('Spells/Epic.png', centered = False)
+            screenshot = self.renderedImageBorders(screenshot, 'Spells/Blizzard.png')
+            screenshot = self.renderedImageBorders(screenshot, 'Spells/Blizzard_enchanted.png')
+            screenshot = self.renderedImageBorders(screenshot, 'Spells/Epic.png')
 
         return screenshot
             
-    def findImage(self, imagePath, threshold = 0.8, centered = True):
+    def findImageCords(self, imagePath, threshold = 0.8, centered = True):
         screenshot = self.windowCapture.screenshot
         image = cv.imread(imagePath)
 
-        result = cv.matchTemplate(screenshot, image, cv.TM_CCOEFF_NORMED)
+        imageBorders = self.findImageBorders(screenshot, image)
+        if(not imageBorders is False):
+            if(centered):
+                cords = ((imageBorders[0] + imageBorders[2]) / 2, (imageBorders[1] + imageBorders[3]) / 2)
+            else:
+                cords = (imageBorders[0], imageBorders[1])
+            return cords
+        else: return False
+
+    def findImageBorders(self, bigImage, smallImage, threshold = 0.8):
+        result = cv.matchTemplate(bigImage, smallImage, cv.TM_CCOEFF_NORMED)
         minVal, maxVal, minCords, maxCords = cv.minMaxLoc(result)
 
         if(maxVal >= threshold):
-            if(centered == False):
-                return maxCords
-            else: return (maxCords[0] + image.shape[1] / 2, maxCords[1] + image.shape[0] / 2)
+            return (maxCords[0], maxCords[1], maxCords[0] + smallImage.shape[1], maxCords[1] + smallImage.shape[0])
         else: return False
 
-    def renderedImageBorder(self, imagePath):
-        cords = self.findImage(imagePath, centered = False)
-        if(cords):
-            image = cv.imread(imagePath)
+    def renderedImageBorders(self, screenshot, imagePath):
+        image = cv.imread(imagePath)
 
-            imWidth = image.shape[1]
-            imHeight = image.shape[0]
-            
-            topLeft = cords
-            topRight = (cords[0] + imWidth, cords[1] + imHeight)
+        imageBorders = self.findImageBorders(screenshot, image)
+        if(imageBorders):
+            topLeft = (imageBorders[0], imageBorders[1])
+            topRight = (imageBorders[2], imageBorders[3])
+            cv.rectangle(screenshot, topLeft, topRight, color = (0, 255, 0), thickness = 2, lineType = cv.LINE_4)
 
-            cv.rectangle(screenshot, topLeft, topRight, color = (0, 255, 0), thickness = 2, lineType = cv.Line_4)
-
-            return screenshot
+        return screenshot
 
     def checkPixel(self, x, y, controlPixelColorString):
         screenshot = self.windowCapture.screenshot

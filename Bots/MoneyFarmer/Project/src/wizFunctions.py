@@ -1,2 +1,0 @@
-class WizFunctions:
-    pass

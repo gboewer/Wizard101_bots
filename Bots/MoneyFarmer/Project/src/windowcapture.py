@@ -1,9 +1,14 @@
 import numpy as np
 import win32gui, win32ui, win32con
-
+from threading import Thread, Lock
+import cv2 as cv
 
 class WindowCapture:
 
+    # threading properties
+    running = True
+    lock = None
+    screenshot = None
     # properties
     w = 0
     h = 0
@@ -15,6 +20,10 @@ class WindowCapture:
 
     # constructor
     def __init__(self, windowHandle):
+        # create a thread lock object
+        self.lock = Lock()
+
+        # set window handle
         self.hwnd = windowHandle
 
         # get the window size
@@ -69,13 +78,14 @@ class WindowCapture:
         # see the discussion here:
         # https://github.com/opencv/opencv/issues/14866#issuecomment-580207109
         img = np.ascontiguousarray(img)
-
+        
         return img
 
     # find the name of the window you're interested in.
     # once you have it, update window_capture()
     # https://stackoverflow.com/questions/55547940/how-to-get-a-list-of-the-name-of-every-open-window
-    def list_window_names(self):
+    @staticmethod
+    def list_window_names():
         def winEnumHandler(hwnd, ctx):
             if win32gui.IsWindowVisible(hwnd):
                 print(hex(hwnd), win32gui.GetWindowText(hwnd))
@@ -88,3 +98,23 @@ class WindowCapture:
     # the __init__ constructor.
     def get_screen_position(self, pos):
         return (pos[0] + self.offset_x, pos[1] + self.offset_y)
+
+    # threading methods
+
+    def start(self):
+        self.running = True
+        t = Thread(target=self.run)
+        t.start()
+
+    def stop(self):
+        self.running = False
+
+    def run(self):
+        # TODO: you can write your own time/iterations calculation to determine how fast this is
+        while self.running:
+            # get an updated image of the game
+            screenshot = self.get_screenshot()
+            # lock the thread while updating the results
+            self.lock.acquire()
+            self.screenshot = screenshot
+            self.lock.release()
