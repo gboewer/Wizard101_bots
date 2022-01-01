@@ -1,16 +1,20 @@
 import pyautogui
 from botStateMachine import *
-from threading import Thread
+from threading import Thread, Lock
 from time import sleep
 
 class MoneyFarmer(BotStateMachine):
 
     windowCapture = None
+    detection = None
     running = False
+    lock = None
 
-    def __init__(self, windowCapture):
+    def __init__(self, windowCapture, detection):
         super().__init__()
+        self.lock = Lock()
         self.windowCapture = windowCapture
+        self.detection = detection
     
     def start(self):
         self.running = True
@@ -25,6 +29,12 @@ class MoneyFarmer(BotStateMachine):
     def stop(self):
         self.running = False
 
+    def setState(self, state):
+        super().setState(state)
+        self.lock.acquire()
+        self.detection.setState(state)
+        self.lock.release()
+
 class Init(State):
     def __init__(self, bot):
         super().__init__(bot)
@@ -33,12 +43,7 @@ class Init(State):
         pyautogui.press('x')
     
     def run(self):
-        controlPixelX, controlPixelY = (22, 51)
-        controlPixelColorString = '0,255,255'
-
-        screenshot = self.bot.windowCapture.screenshot
-        pixelColorString = getPixelColorString(controlPixelX, controlPixelY, screenshot)
-        if(pixelColorString != controlPixelColorString):
+        if(not self.bot.detection.checkPixel(22, 51, '0,255,255')):
             self.bot.setState(WaitingScreen(self.bot))
 
     def exit(self): pass
@@ -49,15 +54,10 @@ class WaitingScreen(State):
 
     def enter(self): pass
     def run(self):
-        controlPixelX, controlPixelY = (22, 51)
-        controlPixelColorString = '0,255,255'
-
-        screenshot = self.bot.windowCapture.screenshot
-        pixelColorString = getPixelColorString(controlPixelX, controlPixelY, screenshot)
-        if(pixelColorString == controlPixelColorString):
-            pyautogui.keyUp('w')
+        if(self.bot.detection.checkPixel(22, 51, '0,255,255')):
             self.bot.setState(RunForward(self.bot))
         sleep(0.5)
+        
     def exit(self): pass
 
 class RunForward(State):
@@ -66,12 +66,7 @@ class RunForward(State):
 
     def enter(self): pyautogui.keyDown('w')
     def run(self):
-        controlPixelX, controlPixelY = (98,98)
-        controlPixelColorString = '180,173,238'
-
-        screenshot = self.bot.windowCapture.screenshot
-        pixelColorString = getPixelColorString(controlPixelX, controlPixelY, screenshot)
-        if(pixelColorString != controlPixelColorString):
+        if(not self.bot.detection.checkPixel(98, 98, '180,173,238')):
             pyautogui.keyUp('w')
             self.bot.setState(Fight(self.bot))
         sleep(0.5)
@@ -81,13 +76,6 @@ class Fight(State):
     def __init__(self, bot):
         super().__init__(bot)
 
-    def enter(self): print('Fight entered')
+    def enter(self): pass
     def run(self): pass
     def exit(self): pass
-
-def getPixelColorString(x, y, screenshot):
-    pixelColor = screenshot[y][x]
-    r, g, b = pixelColor
-    pixelColorString = str(r) + ',' + str(g) + "," + str(b)
-    return pixelColorString
-
